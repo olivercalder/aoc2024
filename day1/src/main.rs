@@ -5,14 +5,14 @@ fn main() {
 
 fn total_distance(r: impl std::io::BufRead) -> isize {
     let (mut left, mut right): (Vec<isize>, Vec<isize>) = r.lines()
-                        .filter_map(|line| line.ok())
-                        .filter(|line| line.len() > 0)
+                        .map_while(Result::ok)
+                        .filter(|line| !line.is_empty())
                         .map(|line| line_to_tuple(line.as_str()))
                         .unzip();
     left.sort_unstable();
     right.sort_unstable();
     left.into_iter()
-        .zip(right.into_iter())
+        .zip(right)
         .map(|(x, y)| (x - y).abs())
         .sum()
 }
