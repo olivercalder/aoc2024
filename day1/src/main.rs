@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 fn main() {
     let (left, right) = sorted_cols(std::io::stdin().lock());
     let distance = total_distance(&left, &right);
@@ -31,36 +33,14 @@ fn total_distance(left: &[isize], right: &[isize]) -> isize {
 }
 
 fn similarity_score(left: &[isize], right: &[isize]) -> isize {
-    let mut total: isize = 0; // Grand total.
-    let mut prev_left: isize = -1; // Assume there's no -1 in the list.
-    let mut prev_sum: isize = 0; // If next left is the same, re-add prev_sum.
-    let r_iter = right.iter().peekable();
-    let mut right_done = false;
-    for x in left {
-        if *x == prev_left {
-            total += prev_sum;
-            continue;
-        }
-        if right_done {
-            break;
-        }
-        r_iter = r_iter.skip_while(|y| **y < *x).peekable();
-        let mut new_sum: isize = 0;
-        loop {
-            let Some(y) = r_iter.peek() else {
-                right_done = false;
-                break;
-            };
-            if **y != *x {
-                continue;
-            }
-            new_sum += **y;
-            let _ = r_iter.next(); // consume y
-        }
-        total += new_sum;
-        prev_sum = new_sum;
-    }
-    total
+    let r_counts = counts(right.iter().cloned());
+    left.iter().fold(0, |acc, x| if let Some(y) = r_counts.get(x) { acc + (x * y) } else { acc } )
+}
+
+fn counts(it: impl Iterator<Item = isize>) -> BTreeMap<isize, isize> {
+    let mut m = BTreeMap::new();
+    it.for_each(|x| { m.entry(x).and_modify(|curr| *curr += 1).or_insert(1); } );
+    m
 }
 
 #[cfg(test)]
@@ -98,6 +78,24 @@ mod tests {
         let result = super::total_distance(&left, &right);
         let expected = 11; // given expected answer
         assert_eq!(result, expected)
+    }
+
+    #[test]
+    fn test_counts() {
+        let input_1: Vec<isize> = vec![3, 4, 2, 1, 3, 3];
+        let result_1 = super::counts(input_1.iter().cloned());
+        assert_eq!(result_1.len(), 4);
+        assert_eq!(result_1[&1], 1);
+        assert_eq!(result_1[&2], 1);
+        assert_eq!(result_1[&3], 3);
+        assert_eq!(result_1[&4], 1);
+        let input_2 = vec![4, 3, 5, 3, 9, 3];
+        let result_2 = super::counts(input_2.iter().cloned());
+        assert_eq!(result_2.len(), 4);
+        assert_eq!(result_2[&3], 3);
+        assert_eq!(result_2[&4], 1);
+        assert_eq!(result_2[&5], 1);
+        assert_eq!(result_2[&9], 1);
     }
 
     #[test]
