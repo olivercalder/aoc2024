@@ -30,6 +30,39 @@ fn total_distance(left: &[isize], right: &[isize]) -> isize {
         .sum()
 }
 
+fn similarity_score(left: &[isize], right: &[isize]) -> isize {
+    let mut total: isize = 0; // Grand total.
+    let mut prev_left: isize = -1; // Assume there's no -1 in the list.
+    let mut prev_sum: isize = 0; // If next left is the same, re-add prev_sum.
+    let r_iter = right.iter().peekable();
+    let mut right_done = false;
+    for x in left {
+        if *x == prev_left {
+            total += prev_sum;
+            continue;
+        }
+        if right_done {
+            break;
+        }
+        r_iter = r_iter.skip_while(|y| **y < *x).peekable();
+        let mut new_sum: isize = 0;
+        loop {
+            let Some(y) = r_iter.peek() else {
+                right_done = false;
+                break;
+            };
+            if **y != *x {
+                continue;
+            }
+            new_sum += **y;
+            let _ = r_iter.next(); // consume y
+        }
+        total += new_sum;
+        prev_sum = new_sum;
+    }
+    total
+}
+
 #[cfg(test)]
 mod tests {
     const EXAMPLE_INPUT: &str = "
