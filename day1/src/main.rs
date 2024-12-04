@@ -1,7 +1,9 @@
 fn main() {
     let (left, right) = sorted_cols(std::io::stdin().lock());
     let distance = total_distance(&left, &right);
+    let similarity = similarity_score(&left, &right);
     println!("total distance: {}", distance);
+    println!("similarity score: {}", similarity);
 }
 
 fn sorted_cols(r: impl std::io::BufRead) -> (Vec<isize>, Vec<isize>) {
@@ -62,6 +64,15 @@ mod tests {
         let (left, right) = super::sorted_cols(test_input);
         let result = super::total_distance(&left, &right);
         let expected = 11; // given expected answer
+        assert_eq!(result, expected)
+    }
+
+    #[test]
+    fn test_example_similarity() {
+        let test_input = std::io::BufReader::new(EXAMPLE_INPUT.as_bytes());
+        let (left, right) = super::sorted_cols(test_input);
+        let result = super::similarity_score(&left, &right);
+        let expected = 31; // given expected answer
         assert_eq!(result, expected)
     }
 }
