@@ -2,6 +2,7 @@ fn main() {
     let safe_reports = count_safe_reports(reports(std::io::stdin().lock()));
     println!("Safe reports: {}", safe_reports.0);
     println!("Safe reports after dampener: {}", safe_reports.1);
+    println!("Safe reports after dampener (brute forced): {}", safe_reports.2);
 }
 
 fn reports(r: impl std::io::BufRead) -> impl Iterator<Item = Vec<isize>> {
@@ -74,19 +75,49 @@ fn dampener_safe_for_range(report: &Vec<isize>, range: std::ops::RangeInclusive<
     true
 }
 
+fn brute_force_dampener_safe(report: &Vec<isize>) -> bool {
+    for i in 0..report.len() {
+        let (left, right) = report.split_at(i);
+        let mut joined = Vec::from(left);
+        joined.extend_from_slice(&right[1..]);
+        if safe(&joined) {
+            return true
+        }
+    }
+    false
+}
+
 /// Returns the number of reports which are immediately safe, and the number of reports which are
-/// safe after at most one entry has been removed.
-fn count_safe_reports(reports: impl Iterator<Item = Vec<isize>>) -> (usize, usize) {
-    let counts = reports.fold(vec![0, 0], |mut acc, report| {
+/// safe after at most one entry has been removed, computed directly or by brute force.
+fn count_safe_reports(reports: impl Iterator<Item = Vec<isize>>) -> (usize, usize, usize) {
+    let counts = reports.fold(vec![0, 0, 0], |mut acc, report| {
         if safe(&report) {
             acc[0] += 1;
             acc[1] += 1;
-        } else if dampener_safe(&report) {
-            acc[1] += 1;
+            acc[2] += 1;
+            if !dampener_safe(&report) {
+                println!("WARNING: dampener_safe missed a report which is already safe: {:?}", report);
+            }
+        } else {
+            match (dampener_safe(&report), brute_force_dampener_safe(&report)) {
+                (true, true) => {
+                    acc[1] += 1;
+                    acc[2] += 1;
+                }
+                (true, false) => {
+                    acc[1] += 1;
+                    println!("WARNING: dampener_safe incorrectly says report is safe: {:?}", report);
+                }
+                (false, true) => {
+                    acc[2] += 1;
+                    println!("WARNING: dampener_safe missed a report which is safe after dampening: {:?}", report);
+                }
+                (false, false) => {},
+            }
         }
         acc
     });
-    (counts[0], counts[1])
+    (counts[0], counts[1], counts[2])
 }
 
 #[cfg(test)]
