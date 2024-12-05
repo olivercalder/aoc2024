@@ -2,7 +2,10 @@ fn main() {
     let safe_reports = count_safe_reports(reports(std::io::stdin().lock()));
     println!("Safe reports: {}", safe_reports.0);
     println!("Safe reports after dampener: {}", safe_reports.1);
-    println!("Safe reports after dampener (brute forced): {}", safe_reports.2);
+    println!(
+        "Safe reports after dampener (brute forced): {}",
+        safe_reports.2
+    );
 }
 
 fn reports(r: impl std::io::BufRead) -> impl Iterator<Item = Vec<isize>> {
@@ -21,7 +24,9 @@ fn reports(r: impl std::io::BufRead) -> impl Iterator<Item = Vec<isize>> {
 /// three.
 fn safe(report: &Vec<isize>) -> bool {
     let mut pairs = report.windows(2);
-    let Some(first) = pairs.next() else { return true };
+    let Some(first) = pairs.next() else {
+        return true;
+    };
     let range = match first[1] - first[0] {
         1..=3 => 1..=3,
         -3..=-1 => -3..=-1,
@@ -61,7 +66,7 @@ fn dampener_safe_for_range(report: &Vec<isize>, range: std::ops::RangeInclusive<
         // See if we're safe if we skip the next item
         let Some(next_pair) = pairs.peek() else {
             // If we skip the next item, we're done, so report is safe.
-            return true
+            return true;
         };
         let can_skip_next = pair_safe(&[pair[0], next_pair[1]], &range);
         match (safe, can_skip_next, can_skip_current) {
@@ -84,7 +89,7 @@ fn brute_force_dampener_safe(report: &Vec<isize>) -> bool {
         let mut joined = Vec::from(left);
         joined.extend_from_slice(&right[1..]);
         if safe(&joined) {
-            return true
+            return true;
         }
     }
     false
@@ -161,7 +166,11 @@ mod tests {
         test_both_directions(super::safe, vec![1], true);
     }
 
-    fn test_both_directions(safe_fn: impl Fn(&Vec<isize>) -> bool, mut report: Vec<isize>, safe: bool) {
+    fn test_both_directions(
+        safe_fn: impl Fn(&Vec<isize>) -> bool,
+        mut report: Vec<isize>,
+        safe: bool,
+    ) {
         assert_eq!(safe_fn(&report), safe);
         report.reverse();
         assert_eq!(safe_fn(&report), safe);
@@ -183,7 +192,10 @@ mod tests {
     #[test]
     fn test_dampener_safe_tough_cases() {
         assert_eq!(super::dampener_safe(&vec![82, 83, 84, 81, 86]), true);
-        assert_eq!(super::dampener_safe(&vec![76, 74, 71, 69, 67, 68, 64]), true);
+        assert_eq!(
+            super::dampener_safe(&vec![76, 74, 71, 69, 67, 68, 64]),
+            true
+        );
         assert_eq!(super::dampener_safe(&vec![79, 80, 83, 81, 82]), true);
         assert_eq!(super::dampener_safe(&vec![28, 30, 33, 36, 42, 39]), true);
         assert_eq!(super::dampener_safe(&vec![85, 83, 80, 82, 78]), true);
