@@ -48,29 +48,32 @@ fn dampener_safe(report: &Vec<isize>) -> bool {
 
 fn dampener_safe_for_range(report: &Vec<isize>, range: std::ops::RangeInclusive<isize>) -> bool {
     let mut already_removed = false;
-    let mut pairs = report.windows(2).enumerate().peekable();
-    while let Some((i, pair)) = pairs.next() {
-        if pair_safe(pair, &range) {
-            continue;
+    let mut pairs = report.windows(2).peekable();
+    let mut can_skip_current = true;
+    while let Some(pair) = pairs.next() {
+        let safe = pair_safe(pair, &range);
+        if !safe {
+            if already_removed {
+                return false;
+            }
+            already_removed = true;
         }
-        if already_removed {
-            return false;
-        }
-        already_removed = true;
         // See if we're safe if we skip the next item
-        let Some((_, next_pair)) = pairs.peek() else {
+        let Some(next_pair) = pairs.peek() else {
             // If we skip the next item, we're done, so report is safe.
             return true
         };
-        if pair_safe(&[pair[0], next_pair[1]], &range) {
-            continue;
+        let can_skip_next = pair_safe(&[pair[0], next_pair[1]], &range);
+        match (safe, can_skip_next, can_skip_current) {
+            (true, _, _) => can_skip_current = can_skip_next,
+            (false, true, _) => {
+                // skip next (the new current), using up our one skip
+                _ = pairs.next();
+                can_skip_current = false; // use skip next (the new current), using it up
+            }
+            (false, false, true) => can_skip_current = false, // can't skip anymore anyway
+            (false, false, false) => return false,
         }
-        // Can't skip the next item either. Only hope is if this is the first pair, and we can skip
-        // the first item in that pair.
-        if i == 0 {
-            continue;
-        }
-        return false
     }
     true
 }
