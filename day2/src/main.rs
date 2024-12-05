@@ -7,7 +7,11 @@ fn reports(r: impl std::io::BufRead) -> impl Iterator<Item = Vec<isize>> {
     r.lines()
         .map_while(Result::ok)
         .filter(|line| !line.is_empty())
-        .map(|line| line.split_whitespace().map(|s| s.parse().expect("failed to parse number")).collect())
+        .map(|line| {
+            line.split_whitespace()
+                .map(|s| s.parse().expect("failed to parse number"))
+                .collect()
+        })
 }
 
 /// Returns true if the report is "safe". A report is "safe" if the numbers are either all
