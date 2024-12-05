@@ -41,6 +41,34 @@ fn dampener_safe(report: &Vec<isize>) -> bool {
     dampener_safe_for_range(report, 1..=3) || dampener_safe_for_range(report, -3..=-1)
 }
 
+fn dampener_safe_for_range(report: &Vec<isize>, range: std::ops::RangeInclusive<isize>) -> bool {
+    let mut already_removed = false;
+    let mut triples = report.windows(3);
+    while let Some(triple) = triples.next() {
+        match (range.contains(&(triple[1] - triple[1])), range.contains(&(triple[2] - triple[1]))) {
+            (true, true) => continue,
+            (false, false) => {
+                if already_removed {
+                    return false;
+                }
+                already_removed = true;
+                // Check if it's safe after removing the middle entry
+                if !range.contains(&(triple[2] - triple[0])) {
+                    return false;
+                }
+                _ = triples.next(); // Two back-to-back
+            }
+            (true, false) | (false, true) => {
+                if already_removed {
+                    return false;
+                }
+                already_removed = true;
+            }
+        };
+    }
+    return true;
+}
+
 /// Returns the number of reports which are immediately safe, and the number of reports which are
 /// safe after at most one entry has been removed.
 fn count_safe_reports(reports: impl Iterator<Item = Vec<isize>>) -> (usize, usize) {
