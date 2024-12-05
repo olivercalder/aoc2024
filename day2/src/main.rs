@@ -178,6 +178,17 @@ mod tests {
     }
 
     #[test]
+    fn test_dampener_safe_tough_cases() {
+        assert_eq!(super::dampener_safe(&vec![82, 83, 84, 81, 86]), true);
+        assert_eq!(super::dampener_safe(&vec![76, 74, 71, 69, 67, 68, 64]), true);
+        assert_eq!(super::dampener_safe(&vec![79, 80, 83, 81, 82]), true);
+        assert_eq!(super::dampener_safe(&vec![28, 30, 33, 36, 42, 39]), true);
+        assert_eq!(super::dampener_safe(&vec![85, 83, 80, 82, 78]), true);
+        assert_eq!(super::dampener_safe(&vec![16, 13, 11, 8, 9, 8]), true);
+        assert_eq!(super::dampener_safe(&vec![63, 60, 66, 69, 72, 73]), true);
+    }
+
+    #[test]
     fn test_count_safe_reports() {
         let test_input = std::io::BufReader::new(EXAMPLE_INPUT.as_bytes());
         let result = super::count_safe_reports(super::reports(test_input));
