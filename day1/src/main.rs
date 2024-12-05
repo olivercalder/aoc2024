@@ -9,18 +9,21 @@ fn main() {
 }
 
 fn sorted_cols(r: impl std::io::BufRead) -> (Vec<isize>, Vec<isize>) {
-    let (mut left, mut right): (Vec<isize>, Vec<isize>) = r.lines()
-                        .map_while(Result::ok)
-                        .filter(|line| !line.is_empty())
-                        .map(|line| line_to_tuple(line.as_str()))
-                        .unzip();
+    let (mut left, mut right): (Vec<isize>, Vec<isize>) = r
+        .lines()
+        .map_while(Result::ok)
+        .filter(|line| !line.is_empty())
+        .map(|line| line_to_tuple(line.as_str()))
+        .unzip();
     left.sort_unstable();
     right.sort_unstable();
     (left, right)
 }
 
 fn line_to_tuple(line: &str) -> (isize, isize) {
-    let mut nums = line.split_whitespace().map(|s| s.parse::<isize>().expect("failed to parse number"));
+    let mut nums = line
+        .split_whitespace()
+        .map(|s| s.parse::<isize>().expect("failed to parse number"));
     let pair: (isize, isize) = (nums.next().unwrap(), nums.next().unwrap());
     pair
 }
@@ -34,12 +37,20 @@ fn total_distance(left: &[isize], right: &[isize]) -> isize {
 
 fn similarity_score(left: &[isize], right: &[isize]) -> isize {
     let r_counts = counts(right.iter().cloned());
-    left.iter().fold(0, |acc, x| if let Some(y) = r_counts.get(x) { acc + (x * y) } else { acc } )
+    left.iter().fold(0, |acc, x| {
+        if let Some(y) = r_counts.get(x) {
+            acc + (x * y)
+        } else {
+            acc
+        }
+    })
 }
 
 fn counts(it: impl Iterator<Item = isize>) -> BTreeMap<isize, isize> {
     let mut m = BTreeMap::new();
-    it.for_each(|x| { m.entry(x).and_modify(|curr| *curr += 1).or_insert(1); } );
+    it.for_each(|x| {
+        m.entry(x).and_modify(|curr| *curr += 1).or_insert(1);
+    });
     m
 }
 
