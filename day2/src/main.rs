@@ -1,6 +1,7 @@
 fn main() {
     let safe_reports = count_safe_reports(reports(std::io::stdin().lock()));
-    println!("Safe reports: {}", safe_reports);
+    println!("Safe reports: {}", safe_reports.0);
+    println!("Safe reports after dampener: {}", safe_reports.1);
 }
 
 fn reports(r: impl std::io::BufRead) -> impl Iterator<Item = Vec<isize>> {
@@ -33,8 +34,26 @@ fn safe(report: &Vec<isize>) -> bool {
     true
 }
 
-fn count_safe_reports(reports: impl Iterator<Item = Vec<isize>>) -> usize {
-    reports.filter(safe).count()
+/// Returns true if the report is "safe" after at most one entry has been removed from the report.
+fn dampener_safe(report: &Vec<isize>) -> bool {
+    // For simplicity (since removal of the first or second level could change the (in|de)creasing
+    // direction), simply run through the report twice, once checking increasing, once decreasing.
+    dampener_safe_for_range(report, 1..=3) || dampener_safe_for_range(report, -3..=-1)
+}
+
+/// Returns the number of reports which are immediately safe, and the number of reports which are
+/// safe after at most one entry has been removed.
+fn count_safe_reports(reports: impl Iterator<Item = Vec<isize>>) -> (usize, usize) {
+    let counts = reports.fold(vec![0, 0], |mut acc, report| {
+        if safe(&report) {
+            acc[0] += 1;
+            acc[1] += 1;
+        } else if dampener_safe(&report) {
+            acc[1] += 1;
+        }
+        acc
+    });
+    (counts[0], counts[1])
 }
 
 #[cfg(test)]
@@ -45,7 +64,9 @@ mod tests {
 9 7 6 2 1
 1 3 2 4 5
 8 6 4 4 1
-1 3 6 7 9";
+1 3 6 7 9
+4 3 6 7 9
+1 3 6 7 6"; // final two cases test behavior when safe once first/last is removed
 
     #[test]
     fn test_reports() {
@@ -58,6 +79,8 @@ mod tests {
             vec![1, 3, 2, 4, 5],
             vec![8, 6, 4, 4, 1],
             vec![1, 3, 6, 7, 9],
+            vec![4, 3, 6, 7, 9],
+            vec![1, 3, 6, 7, 6],
         ];
         assert_eq!(result, expected);
     }
@@ -70,12 +93,15 @@ mod tests {
         assert_eq!(super::safe(&vec![1, 3, 2, 4, 5]), false);
         assert_eq!(super::safe(&vec![8, 6, 4, 4, 1]), false);
         assert_eq!(super::safe(&vec![1, 3, 6, 7, 9]), true);
+        assert_eq!(super::safe(&vec![4, 3, 6, 7, 9]), false);
+        assert_eq!(super::safe(&vec![1, 3, 6, 7, 6]), false);
     }
 
     #[test]
     fn test_count_safe_reports() {
         let test_input = std::io::BufReader::new(EXAMPLE_INPUT.as_bytes());
         let result = super::count_safe_reports(super::reports(test_input));
-        assert_eq!(result, 2)
+        assert_eq!(result.0, 2);
+        assert_eq!(result.1, 6);
     }
 }
