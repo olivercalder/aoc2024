@@ -14,7 +14,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn sum_muls(string: &str) -> usize {
     let re = Regex::new(r"mul\((?<x>[0-9]([0-9]?)([0-9]?)),(?<y>[0-9]([0-9]?)([0-9]?))\)").unwrap();
-    re.captures_iter(&string)
+    re.captures_iter(string)
         .map(|caps| {
             let x: usize = caps.name("x").unwrap().as_str().parse().unwrap();
             let y: usize = caps.name("y").unwrap().as_str().parse().unwrap();
@@ -23,12 +23,15 @@ fn sum_muls(string: &str) -> usize {
         .sum()
 }
 
+/// The `do()` and `don't()` strings in the input "enable" and "disable" all `mul(X,Y)`
+/// instructions which follow, until the next occurrence of `do()` or `don't()`. Only the most
+/// recent `do()` or `don't()` takes effect. The `mul(X,Y)` instructions are enabled initially.
 fn sum_enabled_muls(string: &str) -> usize {
     string
         .split("do()")
         .map(|s| match s.find("don't()") {
             Some(ind) => &s[..ind],
-            None => &s,
+            None => s,
         })
         .map(sum_muls)
         .sum()
