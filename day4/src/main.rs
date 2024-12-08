@@ -73,8 +73,8 @@ impl Grid {
             .filter(|(_, b)| *b == first) // only include grid indices which match the first char
             .map(|(i, _)| self.iters_from_index(i)) // create vec of iters from each matching index
             .flatten() // flatten that iter of vecs of iters into an iter of iters
-            .map(|iter| iter.take(string.len())) // only look at the first N chars
-            .filter(|iter| iter.eq(string.as_bytes())) // only include those which match
+            .map(|iter| iter.take(string.len()).collect::<Vec<u8>>()) // only look at the first N chars
+            .filter(|v| v == string.as_bytes()) // only include those which match
             .count() // count them
     }
 }
