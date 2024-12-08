@@ -10,27 +10,24 @@ fn read_to_str(mut r: impl std::io::Read) -> std::io::Result<String> {
 
 struct Grid {
     lines: Vec<Vec<u8>>,
-    width: usize,
 }
 
 impl Grid {
     fn new(s: String) -> Self {
         let lines = string_to_lines(s);
-        let width = lines[0].len();
         Grid {
-            lines: lines,
-            width: width,
+            lines,
         }
     }
 
-    fn char_at_row_col(&self, row: isize, col: isize) -> Option<&u8> {
+    fn char_at_row_col(&self, row: isize, col: isize) -> Option<u8> {
         if row < 0 || col < 0 {
             return None;
         }
         let Some(r) = self.lines.get(row as usize) else {
             return None;
         };
-        r.get(col as usize)
+        r.get(col as usize).copied()
     }
 
     fn iters_from_row_col(&self, row: isize, col: isize) -> Vec<GridIter> {
@@ -84,14 +81,14 @@ struct GridIter<'a> {
     direction: (isize, isize),
 }
 
-impl<'a> Iterator for GridIter<'a> {
+impl Iterator for GridIter<'_> {
     type Item = u8;
 
     fn next(&mut self) -> Option<u8> {
         let char_here = self.grid.char_at_row_col(self.curr_row, self.curr_col);
         self.curr_row += self.direction.0;
         self.curr_row += self.direction.1;
-        char_here.copied()
+        char_here
     }
 }
 
