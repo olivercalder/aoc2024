@@ -67,7 +67,7 @@ impl Grid {
 }
 
 fn string_to_lines(s: String) -> Vec<Vec<u8>> {
-    s.split('\n').map(|l| l.as_bytes().into()).collect()
+    s.trim().split('\n').map(|l| l.as_bytes().into()).collect()
 }
 
 fn indices_of_match_starts(line: &[u8], first: u8) -> Vec<isize> {
@@ -105,6 +105,38 @@ SMSMSASXSS
 SAXAMASAAA
 MAMMMXMMMM
 MXMXAXMASX";
+
+    #[test]
+    fn test_string_to_lines() {
+        let lines = super::string_to_lines(EXAMPLE_INPUT.into());
+        let expected: Vec<Vec<u8>> = vec![
+            "MMMSXXMASM".as_bytes().to_vec(),
+            "MSAMXMSMSA".as_bytes().to_vec(),
+            "AMXSXMAAMM".as_bytes().to_vec(),
+            "MSAMASMSMX".as_bytes().to_vec(),
+            "XMASAMXAMM".as_bytes().to_vec(),
+            "XXAMMXXAMA".as_bytes().to_vec(),
+            "SMSMSASXSS".as_bytes().to_vec(),
+            "SAXAMASAAA".as_bytes().to_vec(),
+            "MAMMMXMMMM".as_bytes().to_vec(),
+            "MXMXAXMASX".as_bytes().to_vec(),
+        ];
+        assert_eq!(lines, expected);
+    }
+
+    #[test]
+    fn test_indices_of_match_starts() {
+        assert_eq!(super::indices_of_match_starts("MMMSXXMASM".as_bytes(), b'X'), vec![4, 5]);
+        assert_eq!(super::indices_of_match_starts("MSAMXMSMSA".as_bytes(), b'X'), vec![4]);
+        assert_eq!(super::indices_of_match_starts("AMXSXMAAMM".as_bytes(), b'X'), vec![2, 4]);
+        assert_eq!(super::indices_of_match_starts("MSAMASMSMX".as_bytes(), b'X'), vec![9]);
+        assert_eq!(super::indices_of_match_starts("XMASAMXAMM".as_bytes(), b'X'), vec![0, 6]);
+        assert_eq!(super::indices_of_match_starts("XXAMMXXAMA".as_bytes(), b'X'), vec![0, 1, 5, 6]);
+        assert_eq!(super::indices_of_match_starts("SMSMSASXSS".as_bytes(), b'X'), vec![7]);
+        assert_eq!(super::indices_of_match_starts("SAXAMASAAA".as_bytes(), b'X'), vec![2]);
+        assert_eq!(super::indices_of_match_starts("MAMMMXMMMM".as_bytes(), b'X'), vec![5]);
+        assert_eq!(super::indices_of_match_starts("MXMXAXMASX".as_bytes(), b'X'), vec![1, 3, 5, 9]);
+    }
 
     #[test]
     fn test_count_occurrences_xmas() {
