@@ -8,38 +8,29 @@ fn read_to_str(mut r: impl std::io::Read) -> std::io::Result<String> {
     Ok(buffer)
 }
 
-struct Grid {
-    buf: String,
+struct Grid<'a> {
+    lines: Vec<&'a [u8]>,
     width: usize,
 }
 
-impl Grid {
+impl<'a> Grid<'a> {
     fn new(s: String) -> Self {
-        let width = match s.as_str().find('\n') {
-            Some(w) => w,
-            None => s.len(),
-        };
+        let lines: Vec<&[u8]> = s.split('\n').map(|l| l.as_bytes()).collect();
+        let width = lines[0].len();
         Grid {
-            buf: s,
+            lines: lines,
             width: width,
         }
     }
 
-    fn index_to_row_col(&self, ind: usize) -> (isize, isize) {
-        ((ind / self.width) as isize, (ind % self.width) as isize)
-    }
-
-    fn char_at_row_col(&self, row: isize, col: isize) -> Option<u8> {
-        let ind = row * (self.width as isize) + col;
-        if ind < 0 {
+    fn char_at_row_col(&self, row: isize, col: isize) -> Option<&u8> {
+        if row < 0 || col < 0 {
             return None;
         }
-        self.buf.as_bytes().get(ind as usize).copied()
-    }
-
-    fn iters_from_index(&self, ind: usize) -> Vec<GridIter> {
-        let (row, col) = self.index_to_row_col(ind);
-        self.iters_from_row_col(row, col)
+        let Some(r) = self.lines.get(row as usize) else {
+            return None;
+        };
+        r.get(col as usize)
     }
 
     fn iters_from_row_col(&self, row: isize, col: isize) -> Vec<GridIter> {
@@ -67,20 +58,23 @@ impl Grid {
         let Some(first) = string.bytes().next() else {
             return 0;
         };
-        self.buf
-            .bytes()
-            .enumerate()
-            .filter(|(_, b)| *b == first) // only include grid indices which match the first char
-            .map(|(i, _)| self.iters_from_index(i)) // create vec of iters from each matching index
+        self.lines.iter().enumerate() // get row
+            .map(|(row, line)| indices_of_match_starts(line, first).iter().map(|col| (row as isize, *col)))
+            .flatten() // flatten iter of iter of (row, col) into iter of (row, col)
+            .map(|(row, col)| self.iters_from_row_col(row, col)) // iter of vecs of iters
             .flatten() // flatten that iter of vecs of iters into an iter of iters
-            .map(|iter| iter.take(string.len()).collect::<Vec<u8>>()) // only look at the first N chars
-            .filter(|v| v == string.as_bytes()) // only include those which match
-            .count() // count them
+            .map(|iter| iter.take(string.len()).collect::<Vec<u8>>())
+            .filter(|v| v == string.as_bytes())
+            .count()
     }
 }
 
+fn indices_of_match_starts(line: &[u8], first: u8) -> Vec<isize> {
+    line.iter().enumerate().filter(|(_, x)| **x == first).map(|(i, _)| i as isize).collect()
+}
+
 struct GridIter<'a> {
-    grid: &'a Grid,
+    grid: &'a Grid<'a>,
     curr_row: isize,
     curr_col: isize,
     direction: (isize, isize),
@@ -93,7 +87,7 @@ impl<'a> Iterator for GridIter<'a> {
         let char_here = self.grid.char_at_row_col(self.curr_row, self.curr_col);
         self.curr_row += self.direction.0;
         self.curr_row += self.direction.1;
-        char_here
+        char_here.copied()
     }
 }
 
