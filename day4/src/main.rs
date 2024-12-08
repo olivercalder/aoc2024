@@ -8,14 +8,14 @@ fn read_to_str(mut r: impl std::io::Read) -> std::io::Result<String> {
     Ok(buffer)
 }
 
-struct Grid<'a> {
-    lines: Vec<&'a [u8]>,
+struct Grid {
+    lines: Vec<Vec<u8>>,
     width: usize,
 }
 
-impl<'a> Grid<'a> {
+impl Grid {
     fn new(s: String) -> Self {
-        let lines: Vec<&[u8]> = s.split('\n').map(|l| l.as_bytes()).collect();
+        let lines = string_to_lines(s);
         let width = lines[0].len();
         Grid {
             lines: lines,
@@ -59,7 +59,7 @@ impl<'a> Grid<'a> {
             return 0;
         };
         self.lines.iter().enumerate() // get row
-            .map(|(row, line)| indices_of_match_starts(line, first).iter().map(|col| (row as isize, *col)))
+            .map(|(row, line)| indices_of_match_starts(line, first).into_iter().map(move |col| (row.clone() as isize, col)))
             .flatten() // flatten iter of iter of (row, col) into iter of (row, col)
             .map(|(row, col)| self.iters_from_row_col(row, col)) // iter of vecs of iters
             .flatten() // flatten that iter of vecs of iters into an iter of iters
@@ -69,12 +69,16 @@ impl<'a> Grid<'a> {
     }
 }
 
+fn string_to_lines(s: String) -> Vec<Vec<u8>> {
+    s.split('\n').map(|l| l.as_bytes().into()).collect()
+}
+
 fn indices_of_match_starts(line: &[u8], first: u8) -> Vec<isize> {
     line.iter().enumerate().filter(|(_, x)| **x == first).map(|(i, _)| i as isize).collect()
 }
 
 struct GridIter<'a> {
-    grid: &'a Grid<'a>,
+    grid: &'a Grid,
     curr_row: isize,
     curr_col: isize,
     direction: (isize, isize),
