@@ -1,5 +1,9 @@
-fn main() {
-    println!("Hello, world!");
+fn main() -> std::io::Result<()> {
+    let input = read_to_str(std::io::stdin().lock())?;
+    let grid = Grid::new(input);
+    let count = grid.count_occurrences("XMAS");
+    println!("{}", count);
+    Ok(())
 }
 
 fn read_to_str(mut r: impl std::io::Read) -> std::io::Result<String> {
