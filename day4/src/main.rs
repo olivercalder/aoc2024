@@ -1,8 +1,10 @@
 fn main() -> std::io::Result<()> {
     let input = read_to_str(std::io::stdin().lock())?;
     let grid = Grid::new(input);
-    let count = grid.count_occurrences("XMAS");
-    println!("{}", count);
+    let count_xmases = grid.count_occurrences("XMAS");
+    let count_x_mases = grid.count_x_mas_occurrences();
+    println!("XMASes: {}", count_xmases);
+    println!("X-MASes: {}", count_x_mases);
     Ok(())
 }
 
@@ -74,6 +76,34 @@ impl Grid {
             .flatten() // flatten that iter of vecs of iters into an iter of iters
             .map(|iter| iter.bytes(string.len()))
             .filter(|v| v == string.as_bytes())
+            .count()
+    }
+
+    fn count_x_mas_occurrences(&self) -> usize {
+        self.find_coords_of(b'A')
+            .map(|(row, col)| {
+                vec![
+                    GridIter {
+                        grid: self,
+                        curr_row: row - 1,
+                        curr_col: col - 1,
+                        direction: (1, 1),
+                    }
+                    .bytes(3),
+                    GridIter {
+                        grid: self,
+                        curr_row: row + 1,
+                        curr_col: col - 1,
+                        direction: (-1, 1),
+                    }
+                    .bytes(3),
+                ]
+            })
+            .filter(|x_bytes| {
+                x_bytes
+                    .iter()
+                    .all(|bytes| bytes == "MAS".as_bytes() || bytes == "SAM".as_bytes())
+            })
             .count()
     }
 }
@@ -239,5 +269,12 @@ MXMXAXMASX";
         let grid = super::Grid::new(EXAMPLE_INPUT.into());
         let result = grid.count_occurrences("XMAS");
         assert_eq!(result, 18);
+    }
+
+    #[test]
+    fn test_count_x_mas_occurrences() {
+        let grid = super::Grid::new(EXAMPLE_INPUT.into());
+        let result = grid.count_x_mas_occurrences();
+        assert_eq!(result, 9);
     }
 }
