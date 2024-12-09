@@ -15,9 +15,7 @@ struct Grid {
 impl Grid {
     fn new(s: String) -> Self {
         let lines = string_to_lines(s);
-        Grid {
-            lines,
-        }
+        Grid { lines }
     }
 
     fn char_at_row_col(&self, row: isize, col: isize) -> Option<u8> {
@@ -32,14 +30,14 @@ impl Grid {
 
     fn iters_from_row_col(&self, row: isize, col: isize) -> Vec<GridIter> {
         vec![
-            (1, 0),
-            (1, 1),
-            (0, 1),
-            (-1, 1),
-            (-1, 0),
-            (-1, -1),
-            (0, -1),
-            (1, -1),
+            (0, 1),   // right
+            (1, 1),   // right-down
+            (1, 0),   // down
+            (1, -1),  // down-left
+            (0, -1),  // left
+            (-1, -1), // left-up
+            (-1, 0),  // up
+            (-1, 1),  // up-right
         ]
         .iter()
         .map(|dir| GridIter {
@@ -55,8 +53,14 @@ impl Grid {
         let Some(first) = string.bytes().next() else {
             return 0;
         };
-        self.lines.iter().enumerate() // get row
-            .map(|(row, line)| indices_of_match_starts(line, first).into_iter().map(move |col| (row.clone() as isize, col)))
+        self.lines
+            .iter()
+            .enumerate() // get row
+            .map(|(row, line)| {
+                indices_of_match_starts(line, first)
+                    .into_iter()
+                    .map(move |col| (row.clone() as isize, col))
+            })
             .flatten() // flatten iter of iter of (row, col) into iter of (row, col)
             .map(|(row, col)| self.iters_from_row_col(row, col)) // iter of vecs of iters
             .flatten() // flatten that iter of vecs of iters into an iter of iters
@@ -71,7 +75,11 @@ fn string_to_lines(s: String) -> Vec<Vec<u8>> {
 }
 
 fn indices_of_match_starts(line: &[u8], first: u8) -> Vec<isize> {
-    line.iter().enumerate().filter(|(_, x)| **x == first).map(|(i, _)| i as isize).collect()
+    line.iter()
+        .enumerate()
+        .filter(|(_, x)| **x == first)
+        .map(|(i, _)| i as isize)
+        .collect()
 }
 
 struct GridIter<'a> {
@@ -87,7 +95,7 @@ impl Iterator for GridIter<'_> {
     fn next(&mut self) -> Option<u8> {
         let char_here = self.grid.char_at_row_col(self.curr_row, self.curr_col);
         self.curr_row += self.direction.0;
-        self.curr_row += self.direction.1;
+        self.curr_col += self.direction.1;
         char_here
     }
 }
@@ -126,16 +134,60 @@ MXMXAXMASX";
 
     #[test]
     fn test_indices_of_match_starts() {
-        assert_eq!(super::indices_of_match_starts("MMMSXXMASM".as_bytes(), b'X'), vec![4, 5]);
-        assert_eq!(super::indices_of_match_starts("MSAMXMSMSA".as_bytes(), b'X'), vec![4]);
-        assert_eq!(super::indices_of_match_starts("AMXSXMAAMM".as_bytes(), b'X'), vec![2, 4]);
-        assert_eq!(super::indices_of_match_starts("MSAMASMSMX".as_bytes(), b'X'), vec![9]);
-        assert_eq!(super::indices_of_match_starts("XMASAMXAMM".as_bytes(), b'X'), vec![0, 6]);
-        assert_eq!(super::indices_of_match_starts("XXAMMXXAMA".as_bytes(), b'X'), vec![0, 1, 5, 6]);
-        assert_eq!(super::indices_of_match_starts("SMSMSASXSS".as_bytes(), b'X'), vec![7]);
-        assert_eq!(super::indices_of_match_starts("SAXAMASAAA".as_bytes(), b'X'), vec![2]);
-        assert_eq!(super::indices_of_match_starts("MAMMMXMMMM".as_bytes(), b'X'), vec![5]);
-        assert_eq!(super::indices_of_match_starts("MXMXAXMASX".as_bytes(), b'X'), vec![1, 3, 5, 9]);
+        assert_eq!(
+            super::indices_of_match_starts("MMMSXXMASM".as_bytes(), b'X'),
+            vec![4, 5]
+        );
+        assert_eq!(
+            super::indices_of_match_starts("MSAMXMSMSA".as_bytes(), b'X'),
+            vec![4]
+        );
+        assert_eq!(
+            super::indices_of_match_starts("AMXSXMAAMM".as_bytes(), b'X'),
+            vec![2, 4]
+        );
+        assert_eq!(
+            super::indices_of_match_starts("MSAMASMSMX".as_bytes(), b'X'),
+            vec![9]
+        );
+        assert_eq!(
+            super::indices_of_match_starts("XMASAMXAMM".as_bytes(), b'X'),
+            vec![0, 6]
+        );
+        assert_eq!(
+            super::indices_of_match_starts("XXAMMXXAMA".as_bytes(), b'X'),
+            vec![0, 1, 5, 6]
+        );
+        assert_eq!(
+            super::indices_of_match_starts("SMSMSASXSS".as_bytes(), b'X'),
+            vec![7]
+        );
+        assert_eq!(
+            super::indices_of_match_starts("SAXAMASAAA".as_bytes(), b'X'),
+            vec![2]
+        );
+        assert_eq!(
+            super::indices_of_match_starts("MAMMMXMMMM".as_bytes(), b'X'),
+            vec![5]
+        );
+        assert_eq!(
+            super::indices_of_match_starts("MXMXAXMASX".as_bytes(), b'X'),
+            vec![1, 3, 5, 9]
+        );
+    }
+
+    #[test]
+    fn test_iters_from_row_col() {
+        let grid = super::Grid::new(EXAMPLE_INPUT.into());
+        let strs: Vec<String> = grid
+            .iters_from_row_col(1, 2)
+            .into_iter()
+            .map(|iter| String::from_utf8(iter.take(4).collect::<Vec<u8>>()).unwrap())
+            .collect();
+        assert_eq!(
+            strs,
+            vec!["AMXM", "ASAM", "AXAA", "AMM", "ASM", "AM", "AM", "AS",],
+        );
     }
 
     #[test]
