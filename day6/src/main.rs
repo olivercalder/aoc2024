@@ -3,8 +3,10 @@ use std::collections::BTreeSet;
 fn main() -> std::io::Result<()> {
     let input = read_to_str(std::io::stdin().lock())?;
     let grid = Grid::new(input);
-    let count = grid.count_positions();
-    println!("{}", count);
+    let positions = grid.count_positions();
+    let obstacle_placements = grid.count_obstacle_placements();
+    println!("positions: {}", positions);
+    println!("obstacle placements: {}", obstacle_placements);
     Ok(())
 }
 
@@ -56,9 +58,29 @@ impl Grid {
 
     fn count_positions(&self) -> usize {
         let (row, col, direction) = self.find_start();
-        let mut positions = GridIter::new(&self, row, col, direction).collect::<BTreeSet<(isize, isize)>>();
+        let mut positions = GridIter::new(&self, row, col, direction)
+            .map(|(pos, _)| pos)
+            .collect::<BTreeSet<(isize, isize)>>();
         positions.insert((row, col));
         positions.len()
+    }
+
+    fn count_obstacle_placements(&self) -> usize {
+        let mut count = 0;
+        let (start_row, start_col, start_dir) = self.find_start();
+        for (row, r_contents) in self.lines.iter().enumerate() {
+            let row = row as isize;
+            for (col, x) in r_contents.iter().enumerate() {
+                let col = col as isize;
+                if *x == b'#' || (row, col) == (start_row, start_col) {
+                    continue;
+                }
+                if GridIter::new_with_obstacle(self, start_row, start_col, start_dir, (row, col)).has_cycle() {
+                    count += 1;
+                }
+            }
+        }
+        count
     }
 }
 
@@ -67,6 +89,7 @@ struct GridIter<'a> {
     curr_row: isize,
     curr_col: isize,
     curr_dir: (isize, isize),
+    obstacle: Option<(isize, isize)>,
 }
 
 impl<'a> GridIter<'a> {
@@ -76,24 +99,49 @@ impl<'a> GridIter<'a> {
             curr_row: row,
             curr_col: col,
             curr_dir: direction,
+            obstacle: None,
         }
+    }
+
+    fn new_with_obstacle(grid: &Grid, row: isize, col: isize, direction: (isize, isize), obstacle: (isize, isize)) -> GridIter {
+        GridIter {
+            grid,
+            curr_row: row,
+            curr_col: col,
+            curr_dir: direction,
+            obstacle: Some(obstacle),
+        }
+    }
+
+    fn has_cycle(mut self) -> bool {
+        let mut position_directions: BTreeSet<((isize, isize), (isize, isize))> = BTreeSet::new();
+        while let Some(pos_dir) = self.next() {
+            if !position_directions.insert(pos_dir) {
+                return true;
+            }
+        }
+        false
     }
 }
 
 impl Iterator for GridIter<'_> {
-    type Item = (isize, isize);
+    type Item = ((isize, isize), (isize, isize));
 
-    fn next(&mut self) -> Option<(isize, isize)> {
+    fn next(&mut self) -> Option<((isize, isize), (isize, isize))> {
         loop {
             let next_row = self.curr_row + self.curr_dir.0;
             let next_col = self.curr_col + self.curr_dir.1;
+            if Some((next_row, next_col)) == self.obstacle {
+                self.curr_dir = next_direction(self.curr_dir);
+                continue;
+            }
             let next_char = self.grid.char_at_row_col(next_row, next_col);
             match next_char {
                 Some(b'#') => self.curr_dir = next_direction(self.curr_dir),
                 Some(_) => {
                     self.curr_row = next_row;
                     self.curr_col = next_col;
-                    return Some((self.curr_row, self.curr_col));
+                    return Some(((self.curr_row, self.curr_col), self.curr_dir));
                 }
                 None => return None,
             }
@@ -153,8 +201,14 @@ mod tests {
     }
 
     #[test]
-    fn count_positions() {
+    fn test_count_positions() {
         let grid = crate::Grid::new(EXAMPLE_INPUT.into());
         assert_eq!(grid.count_positions(), 41)
+    }
+
+    #[test]
+    fn test_count_obstacle_placements() {
+        let grid = crate::Grid::new(EXAMPLE_INPUT.into());
+        assert_eq!(grid.count_obstacle_placements(), 6)
     }
 }
