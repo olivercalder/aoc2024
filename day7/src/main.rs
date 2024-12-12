@@ -17,26 +17,29 @@ fn get_number_vecs(r: impl std::io::BufRead) -> impl Iterator<Item = (usize, Vec
 }
 
 fn nums_total_up(target: usize, nums: &[usize]) -> bool {
-    remaining_nums_total_up(target, 0, &nums)
+    let Some((&first, rest)) = nums.split_first() else {
+        return false;
+    };
+    remaining_nums_total_up(target, first, rest)
 }
 
 fn remaining_nums_total_up(target: usize, current: usize, nums: &[usize]) -> bool {
-    let Some((first, rest)) = nums.split_first() else {
-        return target == current
+    let Some((&first, rest)) = nums.split_first() else {
+        return target == current;
     };
-    let sum = current + *first;
+    let sum = current + first;
     if sum <= target && remaining_nums_total_up(target, sum, rest) {
-        return true
+        return true;
     }
-    let product = current * *first;
+    let product = current * first;
     if product <= target && remaining_nums_total_up(target, product, rest) {
-        return true
+        return true;
     }
     false
 }
 
 fn sum_of_valid_equations(eqs: impl Iterator<Item = (usize, Vec<usize>)>) -> usize {
-    eqs.filter(|(target, nums)| nums_total_up(*target, nums)).inspect(|x| println!("{:?}", x)).map(|(target, _)| target).sum()
+    eqs.filter(|(target, nums)| nums_total_up(*target, nums)).map(|(target, _)| target).sum()
 }
 
 #[cfg(test)]
@@ -79,6 +82,8 @@ mod tests {
         assert_eq!(crate::nums_total_up(192, &[17, 8, 14]), false);
         assert_eq!(crate::nums_total_up(21037, &[9, 7, 18, 13]), false);
         assert_eq!(crate::nums_total_up(292, &[11, 6, 16, 20]), true);
+        // The case which is erroneously "correct" if you pretend there's a leading 0
+        assert_eq!(crate::nums_total_up(103, &[3, 1, 1, 5, 98]), false);
     }
 
     #[test]
