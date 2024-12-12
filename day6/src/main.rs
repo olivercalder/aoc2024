@@ -57,30 +57,23 @@ impl Grid {
     }
 
     fn count_positions(&self) -> usize {
+        self.get_positions(true).len()
+    }
+
+    fn get_positions(&self, include_start: bool) -> BTreeSet<(isize, isize)> {
         let (row, col, direction) = self.find_start();
         let mut positions = GridIter::new(&self, row, col, direction)
             .map(|(pos, _)| pos)
             .collect::<BTreeSet<(isize, isize)>>();
-        positions.insert((row, col));
-        positions.len()
+        if include_start {
+            positions.insert((row, col));
+        }
+        positions
     }
 
     fn count_obstacle_placements(&self) -> usize {
-        let mut count = 0;
         let (start_row, start_col, start_dir) = self.find_start();
-        for (row, r_contents) in self.lines.iter().enumerate() {
-            let row = row as isize;
-            for (col, x) in r_contents.iter().enumerate() {
-                let col = col as isize;
-                if *x == b'#' || (row, col) == (start_row, start_col) {
-                    continue;
-                }
-                if GridIter::new_with_obstacle(self, start_row, start_col, start_dir, (row, col)).has_cycle() {
-                    count += 1;
-                }
-            }
-        }
-        count
+        self.get_positions(false).into_iter().filter(|pos| GridIter::new_with_obstacle(self, start_row, start_col, start_dir, *pos).has_cycle()).count()
     }
 }
 
