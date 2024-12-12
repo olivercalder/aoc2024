@@ -11,7 +11,10 @@ fn get_number_vecs(r: impl std::io::BufRead) -> impl Iterator<Item = (usize, Vec
         .map(|line| {
             let (first, rest) = line.trim().split_once(':').unwrap();
             let total: usize = first.parse().expect("failed to parse number");
-            let nums: Vec<usize> = rest.trim().split_whitespace().map(|s| s.parse().expect("failed to parse number")).collect();
+            let nums: Vec<usize> = rest
+                .split_whitespace()
+                .map(|s| s.parse().expect("failed to parse number"))
+                .collect();
             (total, nums)
         })
 }
@@ -39,7 +42,9 @@ fn remaining_nums_total_up(target: usize, current: usize, nums: &[usize]) -> boo
 }
 
 fn sum_of_valid_equations(eqs: impl Iterator<Item = (usize, Vec<usize>)>) -> usize {
-    eqs.filter(|(target, nums)| nums_total_up(*target, nums)).map(|(target, _)| target).sum()
+    eqs.filter(|(target, nums)| nums_total_up(*target, nums))
+        .map(|(target, _)| target)
+        .sum()
 }
 
 #[cfg(test)]
